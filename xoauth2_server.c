@@ -71,21 +71,53 @@ static int introspect_token(
     char aud[settings->aud_len + 1];
     strncpy(aud, settings->aud, settings->aud_len);
     aud[settings->aud_len] = 0;
-    
+
+    int aud_num = 0;
+    int i = 0;
+    int not_count = 1;
+    int aud_len = strlen(aud);
+
+    for (i = 0; i < aud_len; i++) {
+      if (aud[i] != ' ') {
+	if (not_count) {
+	  aud_num++;
+	  not_count = 0;
+	}
+      } else {
+	aud[i] = 0;
+	not_count = 1;
+      }
+    }
+
     Enforcer enf;
-    const char* aud_list[2];
+    char** aud_list = (char**)malloc(sizeof(char*) * (aud_num + 1));
+    int pos = 0;
+    int not_set = 1;
 
-    aud_list[0] = aud;
-    aud_list[1] = NULL;
+    memset(aud_list, 0, aud_num + 1);
 
-    if (!(enf = enforcer_create(issuer_ptr, aud_list, &err_msg))) {
+    for (i = 0; i < aud_len; i++) {
+      if (aud[i] != 0) {
+	if (not_set) {
+	  aud_list[pos++] = &aud[i];
+	  not_set = 0;
+	}
+      } else {
+	not_set = 1;
+      }
+    }
+    aud_list[aud_num] = NULL;
+
+    if (!(enf = enforcer_create(issuer_ptr, (const char**)aud_list, &err_msg))) {
       SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to create enforcer: %s", aud));
       SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));
       free(err_msg);
       scitoken_destroy(scitoken);
       free(issuer_ptr);
+      free(aud_list);
       return 0;
     }
+    free(aud_list);
 
     char scope[settings->scope_len + 1];
     strncpy(scope, settings->scope, settings->scope_len);
