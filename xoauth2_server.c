@@ -29,6 +29,8 @@
 #include <scitokens/scitokens.h>
 
 #include "xoauth2_plugin.h"
+#include "oidc_fallback.h"
+#include "jwt_utils.h"
 
 #define DEMILITER " "
 
@@ -54,7 +56,41 @@ static int introspect_token(
     int err = SASL_FAIL;
 
     if(scitoken_deserialize(token, &scitoken, (const char * const*)settings->issuers, &err_msg)) {
-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token: %s", err_msg));
+      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token: token verification failed: %s", err_msg));
+      
+      // OIDC Fallback: Try OIDC discovery if SciTokens fails
+      if (strstr(err_msg, "Failed to retrieve metadata provider information") != NULL || 
+          strstr(err_msg, "Token issuer is not in list of allowed issuers") != NULL) {
+        SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: Trying OIDC fallback for Authentik compatibility"));
+        free(err_msg);
+        
+        // Use configured issuers for OIDC discovery (not token issuer)
+        // Try each configured issuer until one works
+        const char *issuer_for_oidc = NULL;
+        if (settings->issuers && settings->issuers[0]) {
+          issuer_for_oidc = settings->issuers[0];
+        }
+        
+        SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: Using issuer for OIDC discovery: %s", issuer_for_oidc ? issuer_for_oidc : "NULL"));
+        
+        if (issuer_for_oidc) {
+          char user_claim[settings->user_claim_len + 1];
+          strncpy(user_claim, settings->user_claim, settings->user_claim_len);
+          user_claim[settings->user_claim_len] = 0;
+          
+          char aud[settings->aud_len + 1];
+          strncpy(aud, settings->aud, settings->aud_len);
+          aud[settings->aud_len] = 0;
+          
+          if (oidc_verify_token(token, issuer_for_oidc, (const char**)settings->issuers, user, user_claim, aud, &err_msg) == 0) {
+            SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: OIDC fallback successful"));
+            return SASL_OK;
+          } else {
+            SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: OIDC fallback failed: %s", err_msg));
+          }
+        }
+      }
+      
       free(err_msg);
       return err;
     }
