@@ -56,7 +56,7 @@ static int introspect_token(
     int err = SASL_FAIL;
 
     if(scitoken_deserialize(token, &scitoken, (const char * const*)settings->issuers, &err_msg)) {
-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token: token verification failed: %s", err_msg));
+      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token: %s", err_msg));
       
       // OIDC Fallback: Try OIDC discovery if SciTokens fails
       if (strstr(err_msg, "Failed to retrieve metadata provider information") != NULL || 
