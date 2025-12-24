@@ -56,7 +56,9 @@ typedef struct {
     const char *aud;
     unsigned aud_len;
     const char *user_claim;
-    unsigned user_claim_len;  
+    unsigned user_claim_len;
+	const char *group_user;
+	unsigned group_user_len;
     const char *proxy;
     unsigned proxy_len;
     const char *issuers[MAX_ISSUERS];

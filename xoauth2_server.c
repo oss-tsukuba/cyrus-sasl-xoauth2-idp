@@ -30,7 +30,85 @@
 
 #include "xoauth2_plugin.h"
 
-#define DEMILITER " "
+#define DELIMITER " \t"
+
+static int
+wildcard_match(const char *str, size_t len_s,
+                   const char *pat, size_t len_p)
+{
+    /* str pointer and pat pointer */
+    size_t i = 0, j = 0;
+
+    /* Backup positions for '*' handling */
+    size_t star_pat = (size_t)-1;
+    size_t star_str = (size_t)-1;
+
+    while (i < len_s) {
+        if (j < len_p && pat[j] == '*') {
+            /* Record position of '*' */
+            star_pat = j++;
+            star_str = i;
+        }
+        else if (j < len_p && (pat[j] == '?' || pat[j] == str[i])) {
+            /* direct match or '?' match */
+            i++;
+            j++;
+        }
+        else if (star_pat != (size_t)-1) {
+            /* Backtrack: try to extend '*' */
+            j = star_pat + 1;
+            i = ++star_str;
+        }
+        else {
+            return 0;
+        }
+    }
+
+    /* Skip trailing '*' */
+    while (j < len_p && pat[j] == '*')
+        j++;
+
+    return (j == len_p);
+}
+
+static int
+has_str(const char *words1, const char *words2)
+{
+    if (!words1 || !words2 || !*words2)
+        return 0;
+
+    const char *p = words1;
+
+    while (*p) {
+        /* extract token from words1 */
+        p += strspn(p, DELIMITER);
+        if (!*p)
+            break;
+
+        const char *word1 = p;
+        size_t len1 = strcspn(p, DELIMITER);
+        p += len1;
+
+        /* compare with each pattern from words2 */
+        const char *n = words2;
+        while (*n) {
+            n += strspn(n, DELIMITER);
+            if (!*n)
+                break;
+
+            const char *word2 = n;
+            size_t len2 = strcspn(n, DELIMITER);
+            n += len2;
+
+            if (wildcard_match(word1, len1, word2, len2)) {
+				return 1;
+			}
+        }
+    }
+
+    return 0;
+}
+
 
 static int introspect_token(
         xoauth2_plugin_server_settings_t *settings,
@@ -43,13 +121,14 @@ static int introspect_token(
 
     if (settings->proxy != NULL) {
       if (setenv("http_proxy", settings->proxy, 0) != 0 ||
-	  setenv("https_proxy", settings->proxy, 0) != 0 ) {
-	SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: CURLOPT_PROXY=%s", settings->proxy));
+		  setenv("https_proxy", settings->proxy, 0) != 0 ) {
+		  SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: CURLOPT_PROXY=%s", settings->proxy));
       }
     }
 
     SciToken scitoken;
     char *err_msg;
+	char *scope_claim;
     char *value;
     int err = SASL_FAIL;
 
@@ -118,25 +197,27 @@ static int introspect_token(
       return 0;
     }
     free(aud_list);
+    free(issuer_ptr);
+    enforcer_destroy(enf);
+
+    if(scitoken_get_claim_string(scitoken, "scope", &scope_claim, &err_msg)) {
+		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get scope"));
+		free(err_msg);
+		free(scope_claim);
+		scitoken_destroy(scitoken);
+		return err;
+    }
 
     char scope[settings->scope_len + 1];
     strncpy(scope, settings->scope, settings->scope_len);
     scope[settings->scope_len] = 0;
 
-    Acl acl;
-    acl.authz = scope;
-    acl.resource = "";
-
-    if (enforcer_test(enf, scitoken, &acl, &err_msg)) {
-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed enforcer test %s", acl.authz));
-      SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));      
-      free(err_msg);
-      scitoken_destroy(scitoken);
-      free(issuer_ptr);
-      return err;
-    }
-    free(issuer_ptr);
-    enforcer_destroy(enf);
+	if (!has_str(scope_claim, scope)) {
+		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: invalid scope"));
+		free(scope_claim);
+		scitoken_destroy(scitoken);
+		return err;
+	}
 
     char user_claim[settings->user_claim_len + 1];
     strncpy(user_claim, settings->user_claim, settings->user_claim_len);
@@ -604,7 +685,7 @@ static int xoauth2_server_plug_get_options(const sasl_utils_t *utils, xoauth2_pl
       char *iss;
       int num = 0;
 
-      iss = strtok((char *)issuers, DEMILITER);
+      iss = strtok((char *)issuers, DELIMITER);
       while (iss != NULL) {
 	if (num >= MAX_ISSUERS - 1) {
 	    /* MAX_ISSUERS - 1: settings->issuers[num] should be NULL */
@@ -612,7 +693,7 @@ static int xoauth2_server_plug_get_options(const sasl_utils_t *utils, xoauth2_pl
 	} else {
 	    settings->issuers[num++] = strdup(iss);
 	}
-	iss = strtok(NULL, DEMILITER);
+	iss = strtok(NULL, DELIMITER);
       }
     }
 
