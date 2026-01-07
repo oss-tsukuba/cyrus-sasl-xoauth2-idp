@@ -31,6 +31,7 @@
 #include "xoauth2_plugin.h"
 
 #define DELIMITER " \t"
+#define SEPARATOR '|'
 
 static int
 wildcard_match(const char *str, size_t len_s,
@@ -109,6 +110,48 @@ has_str(const char *words1, const char *words2)
     return 0;
 }
 
+static int
+get_user_claim(char **argp, char **user_claim, char **iss)
+{
+    char *arg = *argp;
+    char *start, *end, *sep;
+
+    while (*arg == ' ' || *arg == '\t')
+        arg++;
+
+    if (*arg == '\0') {
+        *argp = arg;
+        return 0;
+    }
+
+    start = arg;
+
+    end = start;
+    while (*end && *end != ' ' && *end != '\t')
+        end++;
+
+    if (*end) {
+        *end = '\0';
+        end++;
+    }
+
+    sep = strchr(start, SEPARATOR);
+    if (sep) {
+        *sep = '\0';
+        *user_claim = start;
+        *iss = sep + 1;
+    } else {
+        *user_claim = start;
+        *iss = NULL;
+    }
+
+    while (*end == ' ' || *end == '\t')
+        end++;
+
+    *argp = end;
+
+    return 1;
+}
 
 static int introspect_token(
         xoauth2_plugin_server_settings_t *settings,
@@ -130,6 +173,8 @@ static int introspect_token(
     char *err_msg;
 	char *scope_claim;
     char *value;
+	char *cur;
+	char *iss;
     int err = SASL_FAIL;
 
     if(scitoken_deserialize(token, &scitoken, (const char * const*)settings->issuers, &err_msg)) {
@@ -197,13 +242,13 @@ static int introspect_token(
       return 0;
     }
     free(aud_list);
-    free(issuer_ptr);
     enforcer_destroy(enf);
 
     if(scitoken_get_claim_string(scitoken, "scope", &scope_claim, &err_msg)) {
 		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get scope"));
 		free(err_msg);
 		free(scope_claim);
+		free(issuer_ptr);
 		scitoken_destroy(scitoken);
 		return err;
     }
@@ -215,30 +260,52 @@ static int introspect_token(
 	if (!has_str(scope_claim, scope)) {
 		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: invalid scope"));
 		free(scope_claim);
+		free(issuer_ptr);
 		scitoken_destroy(scitoken);
 		return err;
 	}
 
-    char user_claim[settings->user_claim_len + 1];
-    strncpy(user_claim, settings->user_claim, settings->user_claim_len);
-    user_claim[settings->user_claim_len] = 0;
-    
-    if(scitoken_get_claim_string(scitoken, user_claim, &value, &err_msg)) {
-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get user claim %s", err_msg));
-      free(err_msg);
-      scitoken_destroy(scitoken);
-      return err;
+    int user_ok = 0;
+
+    char user_claim_setting[settings->user_claim_len + 1];
+    strncpy(user_claim_setting, settings->user_claim, settings->user_claim_len);
+    user_claim_setting[settings->user_claim_len] = 0;
+
+    char *user_claim;
+    cur = user_claim_setting;
+
+    while (get_user_claim(&cur, &user_claim, &iss)) {
+		if (iss != NULL && strcmp(issuer_ptr, iss) != 0)
+			continue;
+
+		if(scitoken_get_claim_string(scitoken, user_claim, &value, &err_msg)) {
+			SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get user claim[%s] %s",
+					  user_claim, err_msg));
+			free(err_msg);
+			continue;
+		}
+
+		if (strcmp(value, user) != 0) {
+			SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, different user's token"));
+			free(value);
+			continue;
+		}
+
+		free(value);
+
+		user_ok = 1;
+		break;
+	}
+
+    if (!user_ok) {
+        // TODO: check group user
     }
 
-    if (strcmp(value, user) != 0) {
-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, different user's token"));
-      scitoken_destroy(scitoken);
-      free(value);
-      return err;
-    }
-    free(value);
-    
-    err = SASL_OK;
+    free(issuer_ptr);
+    free(scope_claim);
+
+    if (user_ok)
+        err = SASL_OK;
 
     scitoken_destroy(scitoken);
     return err;
