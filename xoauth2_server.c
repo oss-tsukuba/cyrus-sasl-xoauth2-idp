@@ -116,8 +116,7 @@ get_user_claim(char **argp, char **user_claim, char **iss)
     char *arg = *argp;
     char *start, *end, *sep;
 
-    while (*arg == ' ' || *arg == '\t')
-        arg++;
+    arg += strspn(arg, DELIMITER);
 
     if (*arg == '\0') {
         *argp = arg;
@@ -126,17 +125,15 @@ get_user_claim(char **argp, char **user_claim, char **iss)
 
     start = arg;
 
-    end = start;
-    while (*end && *end != ' ' && *end != '\t')
-        end++;
+    end = start + strcspn(start, DELIMITER);
 
-    if (*end) {
+    if (*end != '\0') {
         *end = '\0';
         end++;
     }
 
     sep = strchr(start, SEPARATOR);
-    if (sep) {
+    if (sep != NULL) {
         *sep = '\0';
         *user_claim = start;
         *iss = sep + 1;
@@ -145,11 +142,9 @@ get_user_claim(char **argp, char **user_claim, char **iss)
         *iss = NULL;
     }
 
-    while (*end == ' ' || *end == '\t')
-        end++;
+    end += strspn(end, DELIMITER);
 
     *argp = end;
-
     return 1;
 }
 
