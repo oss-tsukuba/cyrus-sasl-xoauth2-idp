@@ -148,6 +148,62 @@ get_user_claim(char **argp, char **user_claim, char **iss)
     return 1;
 }
 
+static int
+get_group_user_name(char **argp,
+                    char **group, char **user, char **authority)
+{
+    char *arg = *argp;
+    char *start, *end;
+    char *p1, *p2;
+
+    /* skip leading spaces/tabs */
+    arg += strspn(arg, DELIMITER);
+
+    if (*arg == '\0') {
+        *argp = arg;
+        return 0;
+    }
+
+    start = arg;
+
+    /* find end of token */
+    end = start + strcspn(start, DELIMITER);
+
+    if (*end != '\0') {
+        *end = '\0';  /* terminate token */
+        end++;
+    }
+
+    /* split by SEPARATOR */
+    p1 = strchr(start, SEPARATOR);
+    if (p1 == NULL) {
+        *group = start;
+        *user = NULL;
+        *authority = NULL;
+    } else {
+        *p1 = '\0';
+        p1++;
+
+        p2 = strchr(p1, SEPARATOR);
+        if (p2 == NULL) {
+            *group = start;
+            *user = p1;
+            *authority = NULL;
+        } else {
+            *p2 = '\0';
+            *group = start;
+            *user = p1;
+            *authority = p2 + 1;
+        }
+    }
+
+    /* skip spaces/tabs after token */
+    end += strspn(end, DELIMITER);
+
+    *argp = end;
+    return 1;
+}
+
 static int introspect_token(
         xoauth2_plugin_server_settings_t *settings,
         sasl_server_params_t *params,
@@ -293,7 +349,27 @@ static int introspect_token(
 	}
 
     if (!user_ok) {
-        // TODO: check group user
+        // check group user
+		char group_user_setting[settings->group_user_len + 1];
+		strncpy(group_user_setting, settings->group_user, settings->group_user_len);
+		group_user_setting[settings->group_user_len] = 0;
+
+		char *group_user;
+		char *auth;
+		cur = group_user_setting;
+
+		while (get_group_user_name(&cur, &group_user, &auth, &iss)) {
+			if ((*iss != 0 && strcmp(issuer_ptr, iss) != 0) || (*auth != 0 && !has_str(scope_claim, auth)))
+				continue;
+
+			if (strcmp(group_user, user) != 0) {
+				SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, different group user's token"));
+				continue;
+			}
+
+			user_ok = 1;
+			break;
+		}
     }
 
     free(issuer_ptr);
@@ -731,6 +807,17 @@ static int xoauth2_server_plug_get_options(const sasl_utils_t *utils, xoauth2_pl
         SASL_log((utils->conn, SASL_LOG_NOTE, "xoauth2_plugin: xoauth2_user_claim is not set"));
         settings->user_claim = "";
         settings->user_claim_len = 0;
+    }
+
+    err = utils->getopt(
+            utils->getopt_context,
+            "XOAUTH2",
+            "xoauth2_group_user",
+            &settings->group_user, &settings->group_user_len);
+    if (err != SASL_OK || !settings->group_user) {
+        SASL_log((utils->conn, SASL_LOG_NOTE, "xoauth2_plugin: xoauth2_group_user is not set"));
+        settings->group_user = "";
+        settings->group_user_len = 0;
     }
 
     memset(settings->issuers, 0, sizeof(settings->issuers));
