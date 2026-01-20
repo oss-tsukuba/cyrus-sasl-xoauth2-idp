@@ -150,7 +150,7 @@ get_user_claim(char **argp, char **user_claim, char **iss)
 
 static int
 get_group_user_name(char **argp,
-                    char **group, char **user, char **authority)
+                    char **group, char **authority, char **issuer)
 {
     char *arg = *argp;
     char *start, *end;
@@ -178,8 +178,8 @@ get_group_user_name(char **argp,
     p1 = strchr(start, SEPARATOR);
     if (p1 == NULL) {
         *group = start;
-        *user = NULL;
         *authority = NULL;
+        *issuer = NULL;
     } else {
         *p1 = '\0';
         p1++;
@@ -187,13 +187,13 @@ get_group_user_name(char **argp,
         p2 = strchr(p1, SEPARATOR);
         if (p2 == NULL) {
             *group = start;
-            *user = p1;
-            *authority = NULL;
+            *authority = p1;
+            *issuer = NULL;
         } else {
             *p2 = '\0';
             *group = start;
-            *user = p1;
-            *authority = p2 + 1;
+            *authority = p1;
+            *issuer = p2 + 1;
         }
     }
 
