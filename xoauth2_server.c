@@ -349,7 +349,7 @@ static int introspect_token(
 	}
 
     if (!user_ok) {
-        // check group user
+		// check group user
 		char group_user_setting[settings->group_user_len + 1];
 		strncpy(group_user_setting, settings->group_user, settings->group_user_len);
 		group_user_setting[settings->group_user_len] = 0;
@@ -359,7 +359,10 @@ static int introspect_token(
 		cur = group_user_setting;
 
 		while (get_group_user_name(&cur, &group_user, &auth, &iss)) {
-			if ((*iss != 0 && strcmp(issuer_ptr, iss) != 0) || (*auth != 0 && !has_str(scope_claim, auth)))
+			if (*iss == 0 || *auth == 0)
+				continue;
+
+			if (!wildcard_match(issuer_ptr, strlen(issuer_ptr), iss, strlen(iss)) || !has_str(scope_claim, auth))
 				continue;
 
 			if (strcmp(group_user, user) != 0) {
