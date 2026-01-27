@@ -6,10 +6,10 @@
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,80 +28,87 @@
 
 #define MAX_ISSUERS 64
 
-typedef struct {
-    unsigned size;
-    unsigned len;
-    char *buf;
-} xoauth2_plugin_str_t;
+struct xoauth2_plugin_str {
+	unsigned size;
+	unsigned len;
+	char *buf;
+};
 
-typedef struct {
-    char *buf;
-    unsigned buf_size;
-    const char *authid;
-    unsigned authid_len;
-    char *token_type;
-    unsigned token_type_len;
-    char *token;
-    unsigned token_len;
-} xoauth2_plugin_auth_response_t;
+struct xoauth2_plugin_auth_response {
+	char *buf;
+	unsigned buf_size;
+	const char *authid;
+	unsigned authid_len;
+	char *token_type;
+	unsigned token_type_len;
+	char *token;
+	unsigned token_len;
+};
 
-typedef struct {
-    const char *user_claim;
-    unsigned user_claim_len;
-} xoauth2_plugin_client_settings_t;
+struct xoauth2_plugin_client_settings {
+	const char *user_claim;
+	unsigned user_claim_len;
+};
 
-typedef struct {
-    const char *scope;
-    unsigned scope_len;
-    const char *aud;
-    unsigned aud_len;
-    const char *user_claim;
-    unsigned user_claim_len;
+struct xoauth2_plugin_server_settings {
+	const char *scope;
+	unsigned scope_len;
+	const char *aud;
+	unsigned aud_len;
+	const char *user_claim;
+	unsigned user_claim_len;
 	const char *group_user;
 	unsigned group_user_len;
-    const char *proxy;
-    unsigned proxy_len;
-    const char *issuers[MAX_ISSUERS];
-} xoauth2_plugin_server_settings_t;
+	const char *proxy;
+	unsigned proxy_len;
+	const char *issuers[MAX_ISSUERS];
+};
 
-typedef struct {
-    xoauth2_plugin_server_settings_t *settings;
-    int state;
-    xoauth2_plugin_auth_response_t resp;
-    xoauth2_plugin_str_t outbuf;
-} xoauth2_plugin_server_context_t;
+struct xoauth2_plugin_server_context {
+	struct xoauth2_plugin_server_settings *settings;
+	int state;
+	struct xoauth2_plugin_auth_response resp;
+	struct xoauth2_plugin_str outbuf;
+};
 
-typedef struct {
-    int state;
-    xoauth2_plugin_auth_response_t resp;
-    xoauth2_plugin_str_t outbuf;
-} xoauth2_plugin_client_context_t;
+struct xoauth2_plugin_client_context {
+	int state;
+	struct xoauth2_plugin_auth_response resp;
+	struct xoauth2_plugin_str outbuf;
+};
 
-int xoauth2_plugin_str_init(const sasl_utils_t *utils, xoauth2_plugin_str_t *s);
-int xoauth2_plugin_str_alloc(const sasl_utils_t *utils, xoauth2_plugin_str_t *s, unsigned req_len);
-int xoauth2_plugin_str_append(const sasl_utils_t *utils, xoauth2_plugin_str_t *s, const char *v, unsigned vlen);
-void xoauth2_plugin_str_free(const sasl_utils_t *utils, xoauth2_plugin_str_t *s);
+int xoauth2_plugin_str_init(const sasl_utils_t *utils,
+			    struct xoauth2_plugin_str *s);
+int xoauth2_plugin_str_alloc(const sasl_utils_t *utils,
+			     struct xoauth2_plugin_str *s,
+			     unsigned req_len);
+int xoauth2_plugin_str_append(const sasl_utils_t *utils,
+			      struct xoauth2_plugin_str *s,
+			      const char *v,
+			      unsigned vlen);
+void xoauth2_plugin_str_free(const sasl_utils_t *utils,
+			     struct xoauth2_plugin_str *s);
 
-int xoauth2_server_plug_init(
-        const sasl_utils_t *utils,
-        int maxversion,
-        int *out_version,
-        sasl_server_plug_t **pluglist,
-        int *plugcount);
+int xoauth2_server_plug_init(const sasl_utils_t *utils,
+			     int maxversion,
+			     int *out_version,
+			     sasl_server_plug_t **pluglist,
+			     int *plugcount);
 
-int xoauth2_client_plug_init(
-        const sasl_utils_t *utils,
-        int maxversion,
-        int *out_version,
-        sasl_client_plug_t **pluglist,
-        int *plugcount);
+int xoauth2_client_plug_init(const sasl_utils_t *utils,
+			     int maxversion,
+			     int *out_version,
+			     sasl_client_plug_t **pluglist,
+			     int *plugcount);
 
 #define SASL_log(args) (utils->log args)
 #define SASL_seterror(args) (utils->seterror args)
 #define SASL_malloc(size) (utils->malloc(size))
 #define SASL_free(p) (utils->free(p))
-#define SASL_base64_encode(in, in_len, out, out_max_len, out_len) (utils->encode64(in, in_len, out, out_max_len, out_len))
-#define SASL_base64_decode(in, in_len, out, out_max_len, out_len) (utils->decode64(in, in_len, out, out_max_len, out_len))
+#define SASL_base64_encode(in, in_len, out, out_max_len, out_len)              \
+	(utils->encode64(in, in_len, out, out_max_len, out_len))
+#define SASL_base64_decode(in, in_len, out, out_max_len, out_len)              \
+	(utils->decode64(in, in_len, out, out_max_len, out_len))
 
 #ifdef WIN32
 #define SASLPLUGINAPI __declspec(dllexport)
