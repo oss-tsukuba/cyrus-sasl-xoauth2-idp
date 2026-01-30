@@ -386,11 +386,21 @@ static int introspect_token(struct xoauth2_plugin_server_settings *settings,
 		cur = group_user_setting;
 
 		while (get_group_user_name(&cur, &group_user, &auth, &iss)) {
-			if (*iss == 0 || *auth == 0)
+			if (*iss == 0 || *auth == 0) {
+				SASL_log((utils->conn, SASL_LOG_WARN,
+				  "xoauth2_plugin: introspect_token,"
+				  "use wildcards, not empty strings"));
 				continue;
+			}
 
-			if (!wildcard_match(issuer_ptr, strlen(issuer_ptr), iss, strlen(iss)) || !has_str(scope_claim, auth))
+			if (!wildcard_match(issuer_ptr, strlen(issuer_ptr),
+							iss, strlen(iss))
+				|| !has_str(scope_claim, auth)) {
+				SASL_log((utils->conn, SASL_LOG_DEBUG,
+				  "xoauth2_plugin: introspect_token,"
+				  "not match the group user conditions"));
 				continue;
+			}
 
 			if (strcmp(group_user, user) != 0) {
 				SASL_log((utils->conn,
