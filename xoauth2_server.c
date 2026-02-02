@@ -302,6 +302,18 @@ static int introspect_token(struct xoauth2_plugin_server_settings *settings,
 		return (0);
 	}
 	free(aud_list);
+
+	Acl acl;
+    acl.authz = "";
+    acl.resource = "";
+
+    if (enforcer_test(enf, scitoken, &acl, &err_msg)) {
+		SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));
+		free(err_msg);
+		scitoken_destroy(scitoken);
+		free(issuer_ptr);
+		return (err);
+    }
 	enforcer_destroy(enf);
 
 	if (scitoken_get_claim_string(

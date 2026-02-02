@@ -1,0 +1,591 @@
+--- xoauth2_server.c
++++ xoauth2_server.c
+@@ -34,310 +34,335 @@
+ #define SEPARATOR '|'
+ 
+ static int
+-wildcard_match(const char *str, size_t len_s,
+-                   const char *pat, size_t len_p)
++wildcard_match(const char *str, size_t len_s, const char *pat, size_t len_p)
+ {
+-    /* str pointer and pat pointer */
+-    size_t i = 0, j = 0;
+-
+-    /* Backup positions for '*' handling */
+-    size_t star_pat = (size_t)-1;
+-    size_t star_str = (size_t)-1;
+-
+-    while (i < len_s) {
+-        if (j < len_p && pat[j] == '*') {
+-            /* Record position of '*' */
+-            star_pat = j++;
+-            star_str = i;
+-        }
+-        else if (j < len_p && (pat[j] == '?' || pat[j] == str[i])) {
+-            /* direct match or '?' match */
+-            i++;
+-            j++;
+-        }
+-        else if (star_pat != (size_t)-1) {
+-            /* Backtrack: try to extend '*' */
+-            j = star_pat + 1;
+-            i = ++star_str;
+-        }
+-        else {
+-            return 0;
+-        }
+-    }
+-
+-    /* Skip trailing '*' */
+-    while (j < len_p && pat[j] == '*')
+-        j++;
+-
+-    return (j == len_p);
++	/* str pointer and pat pointer */
++	size_t i = 0, j = 0;
++
++	/* Backup positions for '*' handling */
++	size_t star_pat = (size_t)-1;
++	size_t star_str = (size_t)-1;
++
++	while (i < len_s) {
++		if (j < len_p && pat[j] == '*') {
++			/* Record position of '*' */
++			star_pat = j++;
++			star_str = i;
++		} else if (j < len_p && (pat[j] == '?' || pat[j] == str[i])) {
++			/* direct match or '?' match */
++			i++;
++			j++;
++		} else if (star_pat != (size_t)-1) {
++			/* Backtrack: try to extend '*' */
++			j = star_pat + 1;
++			i = ++star_str;
++		} else {
++			return (0);
++		}
++	}
++
++	/* Skip trailing '*' */
++	while (j < len_p && pat[j] == '*')
++		j++;
++
++	return (j == len_p);
+ }
+ 
+-static int
+-has_str(const char *words1, const char *words2)
++static int has_str(const char *words1, const char *words2)
+ {
+-    if (!words1 || !words2 || !*words2)
+-        return 0;
+-
+-    const char *p = words1;
+-
+-    while (*p) {
+-        /* extract token from words1 */
+-        p += strspn(p, DELIMITER);
+-        if (!*p)
+-            break;
+-
+-        const char *word1 = p;
+-        size_t len1 = strcspn(p, DELIMITER);
+-        p += len1;
+-
+-        /* compare with each pattern from words2 */
+-        const char *n = words2;
+-        while (*n) {
+-            n += strspn(n, DELIMITER);
+-            if (!*n)
+-                break;
+-
+-            const char *word2 = n;
+-            size_t len2 = strcspn(n, DELIMITER);
+-            n += len2;
+-
+-            if (wildcard_match(word1, len1, word2, len2)) {
+-				return 1;
++	if (!words1 || !words2 || !*words2)
++		return (0);
++
++	const char *p = words1;
++
++	while (*p) {
++		/* extract token from words1 */
++		p += strspn(p, DELIMITER);
++		if (!*p)
++			break;
++
++		const char *word1 = p;
++		size_t len1 = strcspn(p, DELIMITER);
++		p += len1;
++
++		/* compare with each pattern from words2 */
++		const char *n = words2;
++		while (*n) {
++			n += strspn(n, DELIMITER);
++			if (!*n)
++				break;
++
++			const char *word2 = n;
++			size_t len2 = strcspn(n, DELIMITER);
++			n += len2;
++
++			if (wildcard_match(word1, len1, word2, len2)) {
++				return (1);
+ 			}
+-        }
+-    }
++		}
++	}
+ 
+-    return 0;
++	return (0);
+ }
+ 
+-static int
+-get_user_claim(char **argp, char **user_claim, char **iss)
++static int get_user_claim(char **argp, char **user_claim, char **iss)
+ {
+-    char *arg = *argp;
+-    char *start, *end, *sep;
++	char *arg = *argp;
++	char *start, *end, *sep;
+ 
+-    arg += strspn(arg, DELIMITER);
++	arg += strspn(arg, DELIMITER);
+ 
+-    if (*arg == '\0') {
+-        *argp = arg;
+-        return 0;
+-    }
++	if (*arg == '\0') {
++		*argp = arg;
++		return (0);
++	}
+ 
+-    start = arg;
++	start = arg;
+ 
+-    end = start + strcspn(start, DELIMITER);
++	end = start + strcspn(start, DELIMITER);
+ 
+-    if (*end != '\0') {
+-        *end = '\0';
+-        end++;
+-    }
++	if (*end != '\0') {
++		*end = '\0';
++		end++;
++	}
+ 
+-    sep = strchr(start, SEPARATOR);
+-    if (sep != NULL) {
+-        *sep = '\0';
+-        *user_claim = start;
+-        *iss = sep + 1;
+-    } else {
+-        *user_claim = start;
+-        *iss = NULL;
+-    }
++	sep = strchr(start, SEPARATOR);
++	if (sep != NULL) {
++		*sep = '\0';
++		*user_claim = start;
++		*iss = sep + 1;
++	} else {
++		*user_claim = start;
++		*iss = NULL;
++	}
+ 
+-    end += strspn(end, DELIMITER);
++	end += strspn(end, DELIMITER);
+ 
+-    *argp = end;
+-    return 1;
++	*argp = end;
++	return (1);
+ }
+ 
+ static int
+-get_group_user_name(char **argp,
+-                    char **group, char **user, char **authority)
++get_group_user_name(char **argp, char **group, char **authority, char **issuer)
+ {
+-    char *arg = *argp;
+-    char *start, *end;
+-    char *p1, *p2;
+-
+-    /* skip leading spaces/tabs */
+-    arg += strspn(arg, DELIMITER);
+-
+-    if (*arg == '\0') {
+-        *argp = arg;
+-        return 0;
+-    }
+-
+-    start = arg;
+-
+-    /* find end of token */
+-    end = start + strcspn(start, DELIMITER);
+-
+-    if (*end != '\0') {
+-        *end = '\0';  /* terminate token */
+-        end++;
+-    }
+-
+-    /* split by SEPARATOR */
+-    p1 = strchr(start, SEPARATOR);
+-    if (p1 == NULL) {
+-        *group = start;
+-        *user = NULL;
+-        *authority = NULL;
+-    } else {
+-        *p1 = '\0';
+-        p1++;
+-
+-        p2 = strchr(p1, SEPARATOR);
+-        if (p2 == NULL) {
+-            *group = start;
+-            *user = p1;
+-            *authority = NULL;
+-        } else {
+-            *p2 = '\0';
+-            *group = start;
+-            *user = p1;
+-            *authority = p2 + 1;
+-        }
+-    }
+-
+-    /* skip spaces/tabs after token */
+-    end += strspn(end, DELIMITER);
+-
+-    *argp = end;
+-    return 1;
++	char *arg = *argp;
++	char *start, *end;
++	char *p1, *p2;
++
++	/* skip leading spaces/tabs */
++	arg += strspn(arg, DELIMITER);
++
++	if (*arg == '\0') {
++		*argp = arg;
++		return (0);
++	}
++
++	start = arg;
++
++	/* find end of token */
++	end = start + strcspn(start, DELIMITER);
++
++	if (*end != '\0') {
++		*end = '\0'; /* terminate token */
++		end++;
++	}
++
++	/* split by SEPARATOR */
++	p1 = strchr(start, SEPARATOR);
++	if (p1 == NULL) {
++		*group = start;
++		*authority = NULL;
++		*issuer = NULL;
++	} else {
++		*p1 = '\0';
++		p1++;
++
++		p2 = strchr(p1, SEPARATOR);
++		if (p2 == NULL) {
++			*group = start;
++			*authority = p1;
++			*issuer = NULL;
++		} else {
++			*p2 = '\0';
++			*group = start;
++			*authority = p1;
++			*issuer = p2 + 1;
++		}
++	}
++
++	/* skip spaces/tabs after token */
++	end += strspn(end, DELIMITER);
++
++	*argp = end;
++	return (1);
+ }
+ 
+-static int introspect_token(
+-        xoauth2_plugin_server_settings_t *settings,
+-        sasl_server_params_t *params,
+-        const char *user,
+-        char *token,
+-        sasl_out_params_t *oparams)
++static int introspect_token(struct xoauth2_plugin_server_settings *settings,
++			    sasl_server_params_t *params,
++			    const char *user,
++			    char *token,
++			    sasl_out_params_t *oparams)
+ {
+-    const sasl_utils_t *utils = params->utils;
+-
+-    if (settings->proxy != NULL) {
+-      if (setenv("http_proxy", settings->proxy, 0) != 0 ||
+-		  setenv("https_proxy", settings->proxy, 0) != 0 ) {
+-		  SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: CURLOPT_PROXY=%s", settings->proxy));
+-      }
+-    }
++	const sasl_utils_t *utils = params->utils;
++
++	if (settings->proxy != NULL) {
++		if (setenv("http_proxy", settings->proxy, 0) != 0 ||
++		    setenv("https_proxy", settings->proxy, 0) != 0) {
++			SASL_log((utils->conn,
++				  SASL_LOG_ERR,
++				  "xoauth2_plugin: CURLOPT_PROXY=%s",
++				  settings->proxy));
++		}
++	}
+ 
+-    SciToken scitoken;
+-    char *err_msg;
++	SciToken scitoken;
++	char *err_msg;
+ 	char *scope_claim;
+-    char *value;
++	char *value;
+ 	char *cur;
+ 	char *iss;
+-    int err = SASL_FAIL;
+-
+-    if(scitoken_deserialize(token, &scitoken, (const char * const*)settings->issuers, &err_msg)) {
+-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token: %s", err_msg));
+-      free(err_msg);
+-      return err;
+-    }
+-
+-    char *issuer_ptr = NULL;
+-    if(scitoken_get_claim_string(scitoken, "iss", &issuer_ptr, &err_msg)) {
+-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get issuer claim: %s", err_msg));
+-      free(err_msg);
+-      scitoken_destroy(scitoken);
+-      return 0;
+-    }
+-
+-    //Preparing for enforcer test
+-    char aud[settings->aud_len + 1];
+-    strncpy(aud, settings->aud, settings->aud_len);
+-    aud[settings->aud_len] = 0;
+-
+-    int aud_num = 0;
+-    int i = 0;
+-    int not_count = 1;
+-    int aud_len = strlen(aud);
+-
+-    for (i = 0; i < aud_len; i++) {
+-      if (aud[i] != ' ') {
+-	if (not_count) {
+-	  aud_num++;
+-	  not_count = 0;
+-	}
+-      } else {
+-	aud[i] = 0;
+-	not_count = 1;
+-      }
+-    }
+-
+-    Enforcer enf;
+-    char** aud_list = (char**)malloc(sizeof(char*) * (aud_num + 1));
+-    int pos = 0;
+-    int not_set = 1;
+-
+-    memset(aud_list, 0, aud_num + 1);
+-
+-    for (i = 0; i < aud_len; i++) {
+-      if (aud[i] != 0) {
+-	if (not_set) {
+-	  aud_list[pos++] = &aud[i];
+-	  not_set = 0;
+-	}
+-      } else {
+-	not_set = 1;
+-      }
+-    }
+-    aud_list[aud_num] = NULL;
+-
+-    if (!(enf = enforcer_create(issuer_ptr, (const char**)aud_list, &err_msg))) {
+-      SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to create enforcer: %s", aud));
+-      SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));
+-      free(err_msg);
+-      scitoken_destroy(scitoken);
+-      free(issuer_ptr);
+-      free(aud_list);
+-      return 0;
+-    }
+-    free(aud_list);
+-    enforcer_destroy(enf);
+-
+-    if(scitoken_get_claim_string(scitoken, "scope", &scope_claim, &err_msg)) {
+-		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get scope"));
++	int err = SASL_FAIL;
++
++	if (scitoken_deserialize(token,
++				 &scitoken,
++				 (const char *const *)settings->issuers,
++				 &err_msg)) {
++		SASL_log((utils->conn,
++			  SASL_LOG_ERR,
++			  "xoauth2_plugin: introspect_token: %s",
++			  err_msg));
++		free(err_msg);
++		return (err);
++	}
++
++	char *issuer_ptr = NULL;
++	if (scitoken_get_claim_string(scitoken, "iss", &issuer_ptr, &err_msg)) {
++		SASL_log((utils->conn,
++			  SASL_LOG_ERR,
++			  "xoauth2_plugin: introspect_token, Failed to get "
++			  "issuer claim: %s",
++			  err_msg));
++		free(err_msg);
++		scitoken_destroy(scitoken);
++		return (0);
++	}
++	/* Preparing for enforcer test */
++	char aud[settings->aud_len + 1];
++	strncpy(aud, settings->aud, settings->aud_len);
++	aud[settings->aud_len] = 0;
++
++	int aud_num = 0;
++	int i = 0;
++	int not_count = 1;
++	int aud_len = strlen(aud);
++
++	for (i = 0; i < aud_len; i++) {
++		if (aud[i] != ' ') {
++			if (not_count) {
++				aud_num++;
++				not_count = 0;
++			}
++		} else {
++			aud[i] = 0;
++			not_count = 1;
++		}
++	}
++
++	Enforcer enf;
++	char **aud_list = (char **)malloc(sizeof(char *) * (aud_num + 1));
++	int pos = 0;
++	int not_set = 1;
++
++	memset(aud_list, 0, aud_num + 1);
++
++	for (i = 0; i < aud_len; i++) {
++		if (aud[i] != 0) {
++			if (not_set) {
++				aud_list[pos++] = &aud[i];
++				not_set = 0;
++			}
++		} else {
++			not_set = 1;
++		}
++	}
++	aud_list[aud_num] = NULL;
++
++	if (!(enf = enforcer_create(
++		      issuer_ptr, (const char **)aud_list, &err_msg))) {
++		SASL_log((utils->conn,
++			  SASL_LOG_ERR,
++			  "xoauth2_plugin: introspect_token, Failed to create "
++			  "enforcer: %s",
++			  aud));
++		SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));
++		free(err_msg);
++		scitoken_destroy(scitoken);
++		free(issuer_ptr);
++		free(aud_list);
++		return (0);
++	}
++	free(aud_list);
++	enforcer_destroy(enf);
++
++	if (scitoken_get_claim_string(
++		    scitoken, "scope", &scope_claim, &err_msg)) {
++		SASL_log((utils->conn,
++			  SASL_LOG_ERR,
++			  "xoauth2_plugin: introspect_token, Failed to get "
++			  "scope"));
+ 		free(err_msg);
+ 		free(scope_claim);
+ 		free(issuer_ptr);
+ 		scitoken_destroy(scitoken);
+-		return err;
+-    }
++		return (err);
++	}
+ 
+-    char scope[settings->scope_len + 1];
+-    strncpy(scope, settings->scope, settings->scope_len);
+-    scope[settings->scope_len] = 0;
++	char scope[settings->scope_len + 1];
++	strncpy(scope, settings->scope, settings->scope_len);
++	scope[settings->scope_len] = 0;
+ 
+ 	if (!has_str(scope_claim, scope)) {
+-		SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: invalid scope"));
++		SASL_log((utils->conn,
++			  SASL_LOG_ERR,
++			  "xoauth2_plugin: invalid scope"));
+ 		free(scope_claim);
+ 		free(issuer_ptr);
+ 		scitoken_destroy(scitoken);
+-		return err;
++		return (err);
+ 	}
+ 
+-    int user_ok = 0;
++	int user_ok = 0;
+ 
+-    char user_claim_setting[settings->user_claim_len + 1];
+-    strncpy(user_claim_setting, settings->user_claim, settings->user_claim_len);
+-    user_claim_setting[settings->user_claim_len] = 0;
++	char user_claim_setting[settings->user_claim_len + 1];
++	strncpy(user_claim_setting,
++		settings->user_claim,
++		settings->user_claim_len);
++	user_claim_setting[settings->user_claim_len] = 0;
+ 
+-    char *user_claim;
+-    cur = user_claim_setting;
++	char *user_claim;
++	cur = user_claim_setting;
+ 
+-    while (get_user_claim(&cur, &user_claim, &iss)) {
++	while (get_user_claim(&cur, &user_claim, &iss)) {
+ 		if (iss != NULL && strcmp(issuer_ptr, iss) != 0)
+ 			continue;
+ 
+-		if(scitoken_get_claim_string(scitoken, user_claim, &value, &err_msg)) {
+-			SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, Failed to get user claim[%s] %s",
+-					  user_claim, err_msg));
++		if (scitoken_get_claim_string(
++			    scitoken, user_claim, &value, &err_msg)) {
++			SASL_log((utils->conn,
++				  SASL_LOG_ERR,
++				  "xoauth2_plugin: introspect_token, Failed to "
++				  "get user claim[%s] %s",
++				  user_claim,
++				  err_msg));
+ 			free(err_msg);
+ 			continue;
+ 		}
+ 
+ 		if (strcmp(value, user) != 0) {
+-			SASL_log((utils->conn, SASL_LOG_ERR, "xoauth2_plugin: introspect_token, different user's token"));
++			SASL_log((utils->conn,
++				  SASL_LOG_ERR,
++				  "xoauth2_plugin: introspect_token, different "
++				  "user's token"));
+ 			free(value);
+ 			continue;
+ 		}
