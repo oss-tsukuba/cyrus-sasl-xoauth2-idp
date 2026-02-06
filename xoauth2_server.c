@@ -307,6 +307,8 @@ static int introspect_token(struct xoauth2_plugin_server_settings *settings,
     acl.authz = "";
     acl.resource = "";
 
+	/* the "aud" inspection, here */
+	/* the "scope" inspection, elesewhere */
     if (enforcer_test(enf, scitoken, &acl, &err_msg)) {
 		SASL_log((utils->conn, SASL_LOG_ERR, "%s", err_msg));
 		free(err_msg);
