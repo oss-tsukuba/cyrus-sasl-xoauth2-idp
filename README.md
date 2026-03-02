@@ -43,7 +43,10 @@ sasl_plugin_dir=$(pkg-config --variable=libdir libsasl2)/sasl2
     xoauth2_aud: xxxx
     xoauth2_user_claim: xxxx
     xoauth2_issuers: xxxx
+    xoauth2_group_user: xxxx
     ```
+
+For more details, see [here](doc/configuration.md).
 
 ## Client-side configuration
 
