@@ -11,7 +11,7 @@ The valid username is determined by the JWT and the configuration file.
 
 ## mech_list
 
-Whitespace separated list of mechanisms to allow (e.g. ‘plain otp’).
+Whitespace separated list of mechanisms to allow (e.g. `plain` and `otp`).
 Used to restrict the mechanisms to a subset of the installed plugins.
 This plugin is for XOAUTH, so when using this plugin, specify xoauth2.
 
@@ -30,7 +30,7 @@ it is permitted. Wildcards can be used in items.
 example:
 
 ```properties
-mech_list: xoauth2 plain
+xoauth2_scope: foo bar h*i
 ```
 
 ## xoauth2_aud
@@ -54,7 +54,7 @@ it is permitted. Wildcards cannot be used in items.
 example:
 
 ```properties
-xoauth2_scope: foo bar h*i
+xoauth2_issuers: https://keycloak.example.com/auth/realms/hpci https://keycloak.example.org/auth/realms/hpci
 ```
 
 ## xoauth2_user_claim
@@ -91,7 +91,3 @@ example:
 ```properties
 xoauth2_group_user: web|web_access|https://xxx.domain.jp:8443/auth/realms/yyyy strage_read|storage.read:*|https://xxx.domain.jp:8443/auth/realms/yyyy anyone|*|*
 ```
-
-
-
-	
