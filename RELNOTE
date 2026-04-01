@@ -1,3 +1,14 @@
+Release note for Cyrus SASL XOAUTH2 IdP 1.1.0
+=============================================
+
+[2026.04.01]
+
+Updated feature
+* enable to use wildcards in scope definitions
+* enable to define claim names representing usernames for each issuer
+* enable to define group usernames for each issuer and scope
+
+
 Release note for Cyrus SASL XOAUTH2 IdP 1.0.2
 =============================================
 
