@@ -50,7 +50,7 @@ For more details, see [here](doc/configuration.md).
 
 ## Client-side configuration
 
-* `${sasl_plugin_dir}/{service_name}.conf`:
+* `${sasl_plugin_dir}/{service_name}-client.conf`:
 
     ```
     xoauth2_user_claim: xxxx
