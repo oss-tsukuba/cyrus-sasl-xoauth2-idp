@@ -215,6 +215,15 @@ static int introspect_token(struct xoauth2_plugin_server_settings *settings,
 		}
 	}
 
+	if (settings->no_proxy != NULL) {
+		if (setenv("no_proxy", settings->no_proxy, 0) != 0) {
+			SASL_log((utils->conn,
+				  SASL_LOG_ERR,
+				  "xoauth2_plugin: CURLOPT_NOPROXY=%s",
+				  settings->no_proxy));
+		}
+	}
+
 	SciToken scitoken;
 	char *err_msg;
 	char *scope_claim;
@@ -1001,6 +1010,13 @@ xoauth2_server_plug_get_options(const sasl_utils_t *utils,
 			    &settings->proxy,
 			    &settings->proxy_len);
 	/* it's ok that "proxy" is not defined */
+
+	err = utils->getopt(utils->getopt_context,
+			    "XOAUTH2",
+			    "no_proxy",
+			    &settings->no_proxy,
+			    &settings->no_proxy_len);
+	/* it's ok that "no_proxy" is not defined */
 
 	return (SASL_OK);
 }
