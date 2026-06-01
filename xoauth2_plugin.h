@@ -61,6 +61,8 @@ struct xoauth2_plugin_server_settings {
 	unsigned group_user_len;
 	const char *proxy;
 	unsigned proxy_len;
+	const char *no_proxy;
+	unsigned no_proxy_len;
 	const char *issuers[MAX_ISSUERS];
 };
 
