@@ -74,7 +74,7 @@ example:
 xoauth2_user_claim: hoge.id sub|https://xxx.domain.jp:8443/auth/realms/yyyy
 ```
 
-## xoauth2_group_user
+## xoauth2_group_user (optional)
 
 Define group usernames for each scope and issue pair.
 Group username verification is performed after username verification.
@@ -90,4 +90,25 @@ example:
 
 ```properties
 xoauth2_group_user: web|web_access|https://xxx.domain.jp:8443/auth/realms/yyyy strage_read|storage.read:*|https://xxx.domain.jp:8443/auth/realms/yyyy anyone|*|*
+```
+
+## proxy (optional)
+
+Specify the HTTP proxy server used when retrieving the issuer's
+public key or other metadata.
+
+example:
+
+```properties
+proxy: http://proxy.example.com:8080/
+```
+
+## no_proxy (optional)
+
+Comma-separated list of hosts that should bypass the proxy.
+
+example:
+
+```properties
+no_proxy: localhost,127.0.0.1
 ```
