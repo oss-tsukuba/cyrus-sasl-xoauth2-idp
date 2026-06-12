@@ -59,6 +59,8 @@ xoauth2_issuers: https://keycloak.example.com/auth/realms/hpci https://keycloak.
 
 ## xoauth2_user_claim
 
+### Server-side SASL plugin:
+
 Specify the claim name and issuer name separated by '|'
 and define the claim name representing the username for each issuer below.
 
@@ -72,6 +74,20 @@ example:
 
 ```properties
 xoauth2_user_claim: hoge.id sub|https://xxx.domain.jp:8443/auth/realms/yyyy
+```
+
+### Client-side SASL plugin:
+
+Specify the claim name.  
+If an application does not supply a username to this client-side plugin,
+this plugin will retrieve the value of the claim specified in the `xoauth2_user_claim` option from the JWT and use it as the username.
+
+At this time, this is the only option available for client-side plugins.
+
+example:
+
+```properties
+xoauth2_user_claim: hoge.id
 ```
 
 ## xoauth2_group_user (optional)

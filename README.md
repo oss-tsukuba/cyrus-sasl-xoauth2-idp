@@ -8,7 +8,7 @@ This is a plugin of [XOAUTH2](https://developers.google.com/gmail/xoauth2_protoc
 
 * Client side
 
-  The username is taken from the JWT's user claim instead of the input.
+  If an application does not set a username, it is taken from the JWT's user claim.
   
 ## Required packages
 * [Cyrus SASL](https://github.com/cyrusimap/cyrus-sasl)
