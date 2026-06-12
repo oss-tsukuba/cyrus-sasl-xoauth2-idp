@@ -31,9 +31,13 @@ make
 sudo make install
 ```
 
-## Server-side configuration
+## Configuration
 
 sasl_plugin_dir=$(pkg-config --variable=libdir libsasl2)/sasl2
+
+For more details, see [here](doc/configuration.md).
+
+### Server-side
 
 * `${sasl_plugin_dir}/{service_name}.conf`:
 
@@ -49,9 +53,7 @@ sasl_plugin_dir=$(pkg-config --variable=libdir libsasl2)/sasl2
     no_proxy: xxxx,xxxx,...
     ```
 
-For more details, see [here](doc/configuration.md).
-
-## Client-side configuration
+## Client-side
 
 * `${sasl_plugin_dir}/{service_name}-client.conf`:
 
