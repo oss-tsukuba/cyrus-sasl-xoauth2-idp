@@ -67,7 +67,7 @@ and define the claim name representing the username for each issuer below.
 `claim_name|issuer`
 
 If only the claim name is specified, the default claim name is
-enabled for all issues.
+enabled for all issuers.
 Multiple definitions can be specified separated by whitespaces.
 
 example:
