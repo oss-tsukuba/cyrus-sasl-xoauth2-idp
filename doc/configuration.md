@@ -82,7 +82,7 @@ Specify the claim name.
 If an application does not supply a username to this client-side plugin,
 this plugin will retrieve the value of the claim specified in the `xoauth2_user_claim` option from the JWT and use it as the username.
 
-At this time, this is the only option available for client-side plugins.
+At this time, this is the only option available for client-side plugin.
 
 example:
 
