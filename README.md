@@ -53,7 +53,7 @@ For more details, see [here](doc/configuration.md).
     no_proxy: xxxx,xxxx,...
     ```
 
-## Client-side
+### Client-side
 
 * `${sasl_plugin_dir}/{service_name}-client.conf`:
 
