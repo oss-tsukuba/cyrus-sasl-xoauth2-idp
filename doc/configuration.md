@@ -73,7 +73,7 @@ Multiple definitions can be specified separated by whitespaces.
 example:
 
 ```properties
-xoauth2_user_claim: hoge.id sub|https://xxx.domain.jp:8443/auth/realms/yyyy
+xoauth2_user_claim: hoge.id sub|https://keycloak.example.org:8443/auth/realms/yyyy
 ```
 
 ### Client-side SASL plugin:
@@ -105,7 +105,7 @@ Multiple definitions can be specified separated by whitespaces.
 example:
 
 ```properties
-xoauth2_group_user: web|web_access|https://xxx.domain.jp:8443/auth/realms/yyyy strage_read|storage.read:*|https://xxx.domain.jp:8443/auth/realms/yyyy anyone|*|*
+xoauth2_group_user: web|web_access|https://keycloak.example.org:8443/auth/realms/yyyy strage_read|storage.read:*|https://keycloak.example.org:8443/auth/realms/yyyy anyone|*|*
 ```
 
 ## proxy (optional)
