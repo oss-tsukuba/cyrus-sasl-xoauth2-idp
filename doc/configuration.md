@@ -98,7 +98,7 @@ Access using this group username is granted to all users whose JWT scope and iss
 
 If `xoauth2_group_user` is configured, the access permissions granted by this setting are added to those granted by the `xoauth2_user_claim` setting.
 
-Speify the group username, the scope and the issuer separated by '|'
+Specify the group username, the scope and the issuer separated by '|'
 as shown below.
 
 `group_user_name|scope|issuer`
