@@ -61,8 +61,9 @@ xoauth2_issuers: https://keycloak.example.com/auth/realms/hpci https://keycloak.
 
 ### Server-side SASL plugin:
 
-Specify the claim name and issuer name separated by '|'
-and define the claim name representing the username for each issuer below.
+Specify the claim name of the JWT that contains the username granting access.
+
+You can also specify different claim names for each issuer; in that case, separate them with a '|' as shown below.
 
 `claim_name|issuer`
 
@@ -92,9 +93,13 @@ xoauth2_user_claim: hoge.id
 
 ## xoauth2_group_user (optional)
 
-Define group usernames for each scope and issue pair.
-Group username verification is performed after username verification.
-Specify the group username, the scope and the issuer separated by '|'.
+Specify a combination of group username, scope, and issuer to grant access.
+Access using this group username is granted to all users whose JWT scope and issuer match.
+
+If `xoauth2_group_user` is configured, the access permissions granted by this setting are added to those granted by the `xoauth2_user_claim` setting.
+
+Speify the group username, the scope and the issuer separated by '|'
+as shown below.
 
 `group_user_name|scope|issuer`
 
