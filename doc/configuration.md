@@ -63,7 +63,7 @@ xoauth2_issuers: https://keycloak.example.com/auth/realms/hpci https://keycloak.
 
 Specify the claim name of the JWT that contains the username granting access.
 
-You can also specify different claim names for each issuer; in that case, separate them with a '|' as shown below.
+You can also specify different claim names for each issuer. In that case, separate them with a '|' as shown below.
 
 `claim_name|issuer`
 
