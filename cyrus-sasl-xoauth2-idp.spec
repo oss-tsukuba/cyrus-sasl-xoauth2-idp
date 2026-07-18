@@ -26,6 +26,7 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 %make_install
+find %{buildroot} -name '*.la' -delete
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -33,7 +34,6 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %{_plugindir2}/libxoauth2.a
-%{_plugindir2}/libxoauth2.la
 %{_plugindir2}/libxoauth2.so*
 
 %changelog
